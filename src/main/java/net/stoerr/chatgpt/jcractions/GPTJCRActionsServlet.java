@@ -1,18 +1,24 @@
 package net.stoerr.chatgpt.jcractions;
 
+import java.io.IOException;
+
+import javax.servlet.Servlet;
+
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.servlets.HttpConstants;
+import org.apache.sling.api.servlets.ServletResolverConstants;
 import org.apache.sling.api.servlets.SlingAllMethodsServlet;
-import javax.servlet.Servlet;
+import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
-import java.io.IOException;
 
 @Component(service = Servlet.class,
-           property = {
-               "sling.servlet.methods=" + HttpConstants.METHOD_GET,
-               "sling.servlet.paths=/bin/gpt/jcractions"
-           })
+        property = {
+                Constants.SERVICE_DESCRIPTION + "=net.stoerr.chatgpt JCR Actions Servlet",
+                ServletResolverConstants.SLING_SERVLET_PATHS + "=/bin/gpt/jcractions",
+                ServletResolverConstants.SLING_SERVLET_METHODS + "=" + HttpConstants.METHOD_GET,
+                ServletResolverConstants.SLING_SERVLET_METHODS + "=" + HttpConstants.METHOD_POST
+        })
 public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
 
     @Override

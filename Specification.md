@@ -27,3 +27,17 @@ Manager (AEM) and provides actions for a GPT to read the JCR content repository 
 
 The servlet should use the package net.stoerr.chatgpt.jcractions and inherit from SlingAllMethodsServlet, but only
 implement the GET method. The name should be GPTJCRActionsServlet.
+
+## API
+
+### GET /bin/gpt/jcractions.yaml
+
+Returns the OpenAPI specification for the servlet.
+
+### GET /bin/gpt/jcractions.json/{path}
+
+Returns the JSON representation of the JCR node at the given path.
+
+### GET /bin/gpt/jcractions.data/{path}
+
+Returns the binary data of the JCR node at the given path. Sets the Content-Type header to the mime type of the binary.
