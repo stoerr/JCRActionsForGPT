@@ -1,49 +1,89 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
     http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>net.stoerr.chatgpt</groupId>
-  <artifactId>jcr-actions-for-gpt</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <packaging>bundle</packaging>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>net.stoerr.chatgpt</groupId>
+    <artifactId>jcr-actions-for-gpt</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>bundle</packaging>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.scr</artifactId>
-      <version>2.1.16</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.core</artifactId>
-      <version>6.0.0</version>
-      <scope>provided</scope>
-    </dependency>
-  </dependencies>
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.sling</groupId>
+            <artifactId>org.apache.sling.api</artifactId>
+            <version>2.22.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sling</groupId>
+            <artifactId>org.apache.sling.servlets.resolver</artifactId>
+            <version>2.7.14</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>4.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.cmpn</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.scr</artifactId>
+            <version>2.1.16</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.core</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <version>3.5.1</version>
-        <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
-            <Bundle-Description>${project.description}</Bundle-Description>
-            <Export-Package>net.stoerr.chatgpt.*</Export-Package>
-            <Import-Package>*;resolution:=optional</Import-Package>
-            <Private-Package>net.stoerr.chatgpt.internal</Private-Package>
-          </instructions>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>3.5.1</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-Description>${project.description}</Bundle-Description>
+                        <Export-Package>net.stoerr.chatgpt.jcractions.*</Export-Package>
+                        <Import-Package>*;resolution:=optional</Import-Package>
+                        <Private-Package>net.stoerr.chatgpt.jcractions.impl</Private-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
 
-  <profiles>
+            <!-- https://mvnrepository.com/artifact/org.apache.sling/sling-maven-plugin -->
+            <plugin>
+                <groupId>org.apache.sling</groupId>
+                <artifactId>sling-maven-plugin</artifactId>
+                <version>2.4.2</version>
+                <configuration>
+                    <deploymentMethod>WebConsole</deploymentMethod>
+                    <slingUrl>
+                        ${sling.scheme}://${sling.host}:${sling.port}${sling.context}/system/console/install
+                    </slingUrl>
+                    <user>${sling.user}</user>
+                    <password>${sling.password}</password>
+                    <failOnError>true</failOnError>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
         <profile>
             <!-- install bundles via Sling installer (REST API: /system/console/install) -->
             <id>installBundle</id>
@@ -52,14 +92,17 @@
                     <plugin>
                         <groupId>org.apache.sling</groupId>
                         <artifactId>sling-maven-plugin</artifactId>
-                        <configuration>
-                            <deploymentMethod>WebConsole</deploymentMethod>
-                            <slingUrl>${sling.scheme}://${sling.host}:${sling.port}${sling.context}/system/console/install</slingUrl>
-                            <slingUrlSuffix />
-                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>install-bundle</id>
+                                <goals>
+                                    <goal>install</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
         </profile>
-  </profiles>
+    </profiles>
 </project>
