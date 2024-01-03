@@ -7,6 +7,16 @@
     <artifactId>jcr-actions-for-gpt</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
+    <description>This provides the action (incl. an OpenAPI declaration) useable for GPTs to read the JCR content
+        repository in Apache Sling / AEM on configured paths.
+    </description>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
 
     <dependencies>
         <dependency>
