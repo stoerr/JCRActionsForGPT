@@ -111,7 +111,7 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
         Resource resource = request.getResourceResolver().resolve(request, request.getRequestPathInfo().getResourcePath());
         JsonObject json = new JsonObject();
         for (Resource child : resource.getChildren()) {
-            json.addProperty(child.getName(), child.getValueMap().get("jcr:primaryType", String.class));
+            resource.getValueMap().forEach((key, value) -> json.addProperty(key, String.valueOf(value)));
         }
         response.getWriter().write(new Gson().toJson(json));
     }
