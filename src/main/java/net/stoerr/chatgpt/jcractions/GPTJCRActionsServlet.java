@@ -1,11 +1,13 @@
 package net.stoerr.chatgpt.jcractions;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.servlet.Servlet;
 
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.ServletResolverConstants;
 import org.apache.sling.api.servlets.SlingAllMethodsServlet;
@@ -16,6 +18,9 @@ import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.metatype.annotations.Designate;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 @Component(service = Servlet.class,
         configurationPolicy = ConfigurationPolicy.OPTIONAL,
@@ -103,12 +108,28 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
 
     private void serveJSONRepresentation(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         response.setContentType("application/json");
-        response.getWriter().write("JSON content for " + request.getRequestPathInfo().getResourcePath() + " here...");
+        Resource resource = request.getResourceResolver().resolve(request, request.getRequestPathInfo().getResourcePath());
+        JsonObject json = new JsonObject();
+        for (Resource child : resource.getChildren()) {
+            json.addProperty(child.getName(), child.getValueMap().get("jcr:primaryType", String.class));
+        }
+        response.getWriter().write(new Gson().toJson(json));
     }
 
     private void serveBinaryData(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         response.setContentType("binary/data-type"); // set appropriate mime type
-        response.getWriter().write("Binary data for " + request.getRequestPathInfo().getResourcePath() + " here...");
+        Resource resource = request.getResourceResolver().resolve(request, request.getRequestPathInfo().getResourcePath());
+        if (resource.adaptTo(InputStream.class) != null) {
+            InputStream dataStream = resource.adaptTo(InputStream.class);
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = dataStream.read(buffer)) != -1) {
+                response.getOutputStream().write(buffer, 0, bytesRead);
+            }
+            dataStream.close();
+        } else {
+            response.getWriter().write("No binary data available for " + request.getRequestPathInfo().getResourcePath());
+        }
     }
 
 }
