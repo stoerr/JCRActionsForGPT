@@ -10,6 +10,7 @@ import org.apache.sling.api.servlets.SlingAllMethodsServlet;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.metatype.annotations.Designate;
@@ -30,6 +31,11 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
     @Modified
     protected void activate(GPTJCRActionsConfig config) {
         this.config = config;
+    }
+
+    @Deactivate
+    protected void deactivate() {
+        this.config = null;
     }
 
     @Override
