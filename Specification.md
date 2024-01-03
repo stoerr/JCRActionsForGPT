@@ -17,7 +17,7 @@ Manager (AEM) and provides actions for a GPT to read the JCR content repository 
 
 - OSGi configuration "ChatGPT JCR Actions" should be set up.
 - Configure regular expressions for read access on full paths.
-- Configure the servlet to be accessible at `/bin/gpt/jcractions`.
+- Configure the servlet to be accessible at `/bin/public/gpt/jcractions`.
 
 ## Security
 

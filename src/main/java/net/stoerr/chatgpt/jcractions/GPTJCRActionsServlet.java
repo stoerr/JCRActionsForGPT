@@ -21,7 +21,7 @@ import org.osgi.service.metatype.annotations.Designate;
         configurationPolicy = ConfigurationPolicy.OPTIONAL,
         property = {
                 Constants.SERVICE_DESCRIPTION + "=net.stoerr.chatgpt JCR Actions Servlet",
-                ServletResolverConstants.SLING_SERVLET_PATHS + "=/bin/gpt/jcractions",
+                ServletResolverConstants.SLING_SERVLET_PATHS + "=/bin/public/gpt/jcractions",
                 ServletResolverConstants.SLING_SERVLET_METHODS + "=" + HttpConstants.METHOD_GET
         })
 @Designate(ocd = GPTJCRActionsConfig.class)

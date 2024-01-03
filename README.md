@@ -98,7 +98,7 @@ ssh -T -R yourdomain.serveo.net:80:localhost:8080 serveo.net
 
 Replace `yourdomain` with a prefix of your choice that contains some randomness to avoid collisions and replace 8080
 with the port you are using. The servlet
-only works if it was configured and is available at the URL /bin/gpt/jcractions .
+only works if it was configured and is available at the URL /bin/public/gpt/jcractions .
 
 Configure it as actions from a GPT: generally that works like
 [GPT creation for Co-Developer GPT Engine](https://codevelopergptengine.stoerr.net/gpt.html) ,
@@ -108,7 +108,7 @@ add this as additional actions to a Co-Developer GPT.
 
 CAUTION: if you do it like that it makes your local server reachable from the internet at `yourdomain.serveo.net`! If
 you have proprietary stuff on your server and / or use admin/admin as password, and that worries you, please configure a
-reverse proxy or something like that so that only that URL /bin/gpt/jcractions is reachable from the internet.
+reverse proxy or something like that so that only that URL /bin/public/gpt/jcractions is reachable from the internet.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
