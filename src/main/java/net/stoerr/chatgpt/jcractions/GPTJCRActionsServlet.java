@@ -8,15 +8,29 @@ import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.ServletResolverConstants;
 import org.apache.sling.api.servlets.SlingAllMethodsServlet;
 import org.osgi.framework.Constants;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.metatype.annotations.Designate;
 
 @Component(service = Servlet.class,
+        configurationPolicy = ConfigurationPolicy.OPTIONAL,
         property = {
                 Constants.SERVICE_DESCRIPTION + "=net.stoerr.chatgpt JCR Actions Servlet",
                 ServletResolverConstants.SLING_SERVLET_PATHS + "=/bin/gpt/jcractions",
                 ServletResolverConstants.SLING_SERVLET_METHODS + "=" + HttpConstants.METHOD_GET
         })
+@Designate(ocd = GPTJCRActionsConfig.class)
 public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
+
+    private volatile GPTJCRActionsConfig config;
+
+    @Activate
+    @Modified
+    protected void activate(GPTJCRActionsConfig config) {
+        this.config = config;
+    }
 
     @Override
     protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
