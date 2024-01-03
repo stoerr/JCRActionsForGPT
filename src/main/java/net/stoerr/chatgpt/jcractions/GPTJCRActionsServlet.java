@@ -61,6 +61,9 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
         }
     }
 
+    /**
+     * Returns a full OpenAPI spec of this servlet; we omit /jcractions.yaml since that is not an operation for the GPT.
+     */
     private void serveOpenAPISpecification(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         response.setContentType("application/yaml");
         response.getWriter().write("" +
@@ -72,12 +75,6 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 "servers:\n" +
                 "  - url: /bin/gpt/jcractions\n" +
                 "paths:\n" +
-                "  /jcractions.yaml:\n" +
-                "    get:\n" +
-                "      summary: Returns the OpenAPI specification\n" +
-                "      responses:\n" +
-                "        '200':\n" +
-                "          description: OK\n" +
                 "  /jcractions.json/{path}:\n" +
                 "    get:\n" +
                 "      summary: Returns JSON representation of the JCR node\n" +
