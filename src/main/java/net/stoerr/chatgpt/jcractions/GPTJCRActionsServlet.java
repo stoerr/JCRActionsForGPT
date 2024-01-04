@@ -173,7 +173,7 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
     private void serveJSONRepresentation(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         RequestPathInfo requestPathInfo = request.getRequestPathInfo();
         if (!pathIsAllowed(requestPathInfo.getSuffix())) {
-            logError(response, 403, "Access to " + request.getRequestPathInfo().getResourcePath() + " not allowed in configuration.");
+            logError(response, 403, "Access to " + request.getRequestPathInfo().getSuffix() + " not allowed in configuration.");
             return;
         }
         Resource resource = requestPathInfo.getSuffixResource();
@@ -271,7 +271,7 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
     private void serveBinaryData(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         RequestPathInfo requestPathInfo = request.getRequestPathInfo();
         if (!pathIsAllowed(requestPathInfo.getSuffix())) {
-            logError(response, 403, "Access to " + request.getRequestPathInfo().getResourcePath() + " not allowed in configuration.");
+            logError(response, 403, "Access to " + request.getRequestPathInfo().getSuffix() + " not allowed in configuration.");
             return;
         }
         Resource resource = requestPathInfo.getSuffixResource();
@@ -279,9 +279,9 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
             logError(response, 404, "No resource found for " + requestPathInfo.getResourcePath());
             return;
         }
-        try (InputStream dataStream = resource.adaptTo(InputStream.class)) {
+        try (InputStream dataStream = getDataStream(resource)) {
             if (dataStream != null) {
-                String mimeType = resource.getResourceMetadata().getContentType();
+                String mimeType = getMimeType(resource);
                 if (mimeType == null) {
                     logError(response, 406, "No mimetype available for " + resource.getPath());
                     return;
@@ -296,6 +296,34 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 logError(response, 404, "No binary data available for " + requestPathInfo.getResourcePath());
             }
         }
+    }
+
+    private String getMimeType(Resource resource) {
+        String mimeType = resource.getResourceMetadata().getContentType();
+        if (mimeType == null) {
+            mimeType = resource.getValueMap().get("jcr:mimeType", String.class);
+        }
+        if (mimeType == null && resource.getChild("jcr:content") != null) {
+            mimeType = resource.getChild("jcr:content").getResourceMetadata().getContentType();
+        }
+        if (mimeType == null && resource.getChild("jcr:content") != null) {
+            mimeType = resource.getValueMap().get("jcr:content/jcr:mimeType", String.class);
+        }
+        return mimeType;
+    }
+
+    private InputStream getDataStream(Resource resource) {
+        InputStream result = resource.adaptTo(InputStream.class);
+        if (result == null && resource.getChild("jcr:content") != null) {
+            result = resource.getChild("jcr:content").adaptTo(InputStream.class);
+        }
+        if (result == null) {
+            result = resource.getValueMap().get("jcr:data", InputStream.class);
+        }
+        if (result == null) {
+            result = resource.getValueMap().get("jcr:content/jcr:data", InputStream.class);
+        }
+        return result;
     }
 
 }
