@@ -24,6 +24,8 @@ import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -38,8 +40,11 @@ import com.google.gson.JsonObject;
 @Designate(ocd = GPTJCRActionsConfig.class)
 public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
 
-    /** For local testing in the browser an alternative to authorization. */
+    /**
+     * For local testing in the browser an alternative to authorization.
+     */
     public static final String COOKIE_AUTHORIZATION = "JcrActionsAuthorization";
+    private static final Logger LOG = LoggerFactory.getLogger(GPTJCRActionsServlet.class);
     /**
      * Those are metadata and not relevant for the resource content.
      */
@@ -71,14 +76,16 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
 
     @Override
     protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
-        if (checkAuthorizationFailure(request, response)) return;
+        LOG.info("GPTJCRActionsServlet.doGet({})", request.getRequestURI());
 
         String extension = request.getRequestPathInfo().getExtension();
+        if (null == extension || "yaml".equals(extension)) {
+            serveOpenAPISpecification(request, response);
+            return;
+        }
+        if (checkAuthorizationFailure(request, response)) return;
 
         switch (extension) {
-            case "yaml":
-                serveOpenAPISpecification(response);
-                break;
             case "json":
                 serveJSONRepresentation(request, response);
                 break;
@@ -86,8 +93,8 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 serveBinaryData(request, response);
                 break;
             default:
-                response.setContentType("text/plain");
-                response.getWriter().write("Invalid request extension.");
+                response.setStatus(404);
+                response.getWriter().write("Invalid request extension " + extension + ".");
                 break;
         }
     }
@@ -95,19 +102,23 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
     /**
      * Returns a full OpenAPI spec of this servlet; we omit /jcractions.yaml since that is not an operation for the GPT.
      */
-    private void serveOpenAPISpecification(SlingHttpServletResponse response) throws IOException {
+    private void serveOpenAPISpecification(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         response.setContentType("text/yaml");
-        response.getWriter().write("" +
+        String url = request.getRequestURL().toString();
+        url = url.replaceFirst("/bin/.*", "")
+                .replaceFirst("^http://", "https://");
+        String spec = "" +
                 "openapi: 3.0.0\n" +
                 "info:\n" +
                 "  title: GPT JCR Actions API\n" +
                 "  description: API to interact with JCR content repository via GPT.\n" +
                 "  version: 1.0.0\n" +
                 "servers:\n" +
-                "  - url: /bin/gpt/jcractions\n" +
+                "  - url: THEURL\n" +
                 "paths:\n" +
-                "  /jcractions.{depth}.json/{path}:\n" +
+                "  /bin/public/gpt/jcractions.{depth}.json/{path}:\n" +
                 "    get:\n" +
+                "      operationId: readJson\n" +
                 "      summary: Returns JSON representation of the JCR node up to given children depth\n" +
                 "      parameters:\n" +
                 "        - in: path\n" +
@@ -124,8 +135,9 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 "      responses:\n" +
                 "        '200':\n" +
                 "          description: JSON content of the JCR node\n" +
-                "  /jcractions.data/{path}:\n" +
+                "  /bin/public/gpt/jcractions.data/{path}:\n" +
                 "    get:\n" +
+                "      operationId: readData\n" +
                 "      summary: Returns the binary data of the JCR node\n" +
                 "      parameters:\n" +
                 "        - in: path\n" +
@@ -135,7 +147,14 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 "            type: string\n" +
                 "      responses:\n" +
                 "        '200':\n" +
-                "          description: Binary data of the JCR node\n");
+                "          description: Binary data of the JCR node\n";
+        response.getWriter().write(spec.replace("THEURL", url));
+    }
+
+    private void logError(SlingHttpServletResponse response, int statuscode, String message)
+            throws IOException {
+        response.setStatus(404);
+        response.getWriter().write(message);
     }
 
     private void serveJSONRepresentation(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
