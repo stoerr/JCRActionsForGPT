@@ -97,14 +97,18 @@ ssh -T -R yourdomain.serveo.net:80:localhost:8080 serveo.net
 ```
 
 Replace `yourdomain` with a prefix of your choice that contains some randomness to avoid collisions and replace 8080
-with the port you are using. The servlet
+with the port you are using for Apache Sling. The servlet
 only works if it was configured and is available at the URL /bin/public/gpt/jcractions .
 
 Configure it as actions from a GPT: generally that works like
 [GPT creation for Co-Developer GPT Engine](https://codevelopergptengine.stoerr.net/gpt.html) ,
-but you have to use the import URL `https://yourdomain.serveo.net/bin/gpt/jcractions.yaml`
-and the API key you configured in the OSGI configuration. You can either create a GPT that just has this as actions, or
+but you have to use the import URL `https://yourdomain.serveo.net/bin/gpt/jcractions.yaml`.
+You can either create a GPT that just has this as actions, or
 add this as additional actions to a Co-Developer GPT.
+IMPORTANT: you have to set the authentication type to "API Key", and paste the same API key that you configured in the
+OSGI configuration into the API key field and set Auth Type to Custom with custom header name `X-JcrActions-Api-Key`.
+You have to repeat that if you re-import the actions, or ChatGPT gives an empty answer with ClientError (which is a bug
+in ChatGPT).
 
 CAUTION: if you do it like that it makes your local server reachable from the internet at `yourdomain.serveo.net`! If
 you have proprietary stuff on your server and / or use admin/admin as password, and that worries you, please configure a

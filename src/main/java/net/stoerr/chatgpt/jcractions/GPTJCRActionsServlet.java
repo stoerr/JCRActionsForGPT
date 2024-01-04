@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.stream.Stream;
 
 import javax.servlet.Servlet;
+import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 
 import org.apache.sling.api.SlingHttpServletRequest;
@@ -44,6 +45,13 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
      * For local testing in the browser an alternative to authorization.
      */
     public static final String COOKIE_AUTHORIZATION = "JcrActionsAuthorization";
+
+    /**
+     * The header we normally receive the API key for authorization from ChatGPT.
+     * Using the "Authorization" header is in conflict with Apache Sling's own authorization.
+     */
+    public static final String HEADER_API_KEY = "X-JcrActions-Api-Key";
+
     private static final Logger LOG = LoggerFactory.getLogger(GPTJCRActionsServlet.class);
     /**
      * Those are metadata and not relevant for the resource content.
@@ -75,6 +83,11 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
     }
 
     @Override
+    protected void doHead(SlingHttpServletRequest request, SlingHttpServletResponse response) {
+        // don't want to do the request twice - the normal head operation does this.
+    }
+
+    @Override
     protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         LOG.info("GPTJCRActionsServlet.doGet({})", request.getRequestURI());
 
@@ -93,10 +106,14 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 serveBinaryData(request, response);
                 break;
             default:
-                response.setStatus(404);
-                response.getWriter().write("Invalid request extension " + extension + ".");
+                logError(response, 404, "Invalid request extension " + extension + ".");
                 break;
         }
+    }
+
+    @Override
+    protected void doOptions(SlingHttpServletRequest request, SlingHttpServletResponse response) throws ServletException, IOException {
+        super.doOptions(request, response);
     }
 
     /**
@@ -119,6 +136,7 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 "  /bin/public/gpt/jcractions.{depth}.json/{path}:\n" +
                 "    get:\n" +
                 "      operationId: readJson\n" +
+                "      x-openai-isConsequential: false\n" +
                 "      summary: Returns JSON representation of the JCR node up to given children depth\n" +
                 "      parameters:\n" +
                 "        - in: path\n" +
@@ -138,6 +156,7 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 "  /bin/public/gpt/jcractions.data/{path}:\n" +
                 "    get:\n" +
                 "      operationId: readData\n" +
+                "      x-openai-isConsequential: false\n" +
                 "      summary: Returns the binary data of the JCR node\n" +
                 "      parameters:\n" +
                 "        - in: path\n" +
@@ -151,18 +170,11 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
         response.getWriter().write(spec.replace("THEURL", url));
     }
 
-    private void logError(SlingHttpServletResponse response, int statuscode, String message)
-            throws IOException {
-        response.setStatus(404);
-        response.getWriter().write(message);
-    }
-
     private void serveJSONRepresentation(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         RequestPathInfo requestPathInfo = request.getRequestPathInfo();
         Resource resource = requestPathInfo.getSuffixResource();
         if (resource == null) {
-            response.setStatus(404);
-            response.getWriter().write("No resource found for " + request.getRequestPathInfo().getResourcePath());
+            logError(response, 404, "No resource found for " + request.getRequestPathInfo().getResourcePath());
             return;
         }
         // find and parse numeric selector as depth
@@ -174,6 +186,31 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
         response.setContentType("application/json");
         JsonObject json = toJsonObject(resource, depth);
         response.getWriter().write(gson.toJson(json));
+    }
+
+    private void serveBinaryData(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
+        Resource resource = request.getRequestPathInfo().getSuffixResource();
+        if (resource == null) {
+            logError(response, 404, "No resource found for " + request.getRequestPathInfo().getResourcePath());
+            return;
+        }
+        try (InputStream dataStream = resource.adaptTo(InputStream.class)) {
+            if (dataStream != null) {
+                String mimeType = resource.getResourceMetadata().getContentType();
+                if (mimeType == null) {
+                    logError(response, 406, "No mimetype available for " + resource.getPath());
+                    return;
+                }
+                response.setContentType(mimeType);
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = dataStream.read(buffer)) != -1) {
+                    response.getOutputStream().write(buffer, 0, bytesRead);
+                }
+            } else {
+                logError(response, 404, "No binary data available for " + request.getRequestPathInfo().getResourcePath());
+            }
+        }
     }
 
     private JsonObject toJsonObject(Resource resource, int depth) {
@@ -203,47 +240,15 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
         }
     }
 
-    private void serveBinaryData(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
-        Resource resource = request.getRequestPathInfo().getSuffixResource();
-        if (resource == null) {
-            response.setStatus(404);
-            response.getWriter().write("No resource found for " + request.getRequestPathInfo().getResourcePath());
-            return;
-        }
-        try (InputStream dataStream = resource.adaptTo(InputStream.class)) {
-            if (dataStream != null) {
-                String mimeType = resource.getResourceMetadata().getContentType();
-                if (mimeType == null) {
-                    response.setStatus(406);
-                    response.getWriter().write("No mimetype available for " + resource.getPath());
-                    return;
-                }
-                response.setContentType(mimeType);
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = dataStream.read(buffer)) != -1) {
-                    response.getOutputStream().write(buffer, 0, bytesRead);
-                }
-            } else {
-                response.setStatus(404);
-                response.getWriter().write("No binary data available for " + request.getRequestPathInfo().getResourcePath());
-            }
-        }
-    }
-
     private boolean checkAuthorizationFailure(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         String requiredSecret = config.apiKey();
         if (requiredSecret == null || requiredSecret.trim().isEmpty()) {
-            response.setStatus(500);
-            response.getWriter().write("No API key configured.");
+            logError(response, 500, "No API key configured.");
             return true;
         }
-        String secret = request.getHeader("X-API-Key");
-        if (secret == null) {
-            secret = request.getHeader("Authorization");
-        }
-        if (secret == null) {
-            secret = request.getParameter("Authorization");
+        String secret = request.getHeader(HEADER_API_KEY);
+        if (secret == null) { // for easy testing in the browser
+            secret = request.getParameter(HEADER_API_KEY);
         }
         if (secret == null) {
             Cookie cookie = request.getCookie(COOKIE_AUTHORIZATION);
@@ -251,12 +256,25 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 secret = cookie.getValue();
             }
         }
-        if (secret == null || !secret.trim().equals(requiredSecret.trim())) {
-            response.setStatus(401);
-            response.getWriter().write("Invalid API key.");
+        if (secret == null) {
+            logError(response, 401, "No API key given in request.");
+            return true;
+        }
+        if (secret.startsWith("Basic ")) {
+            secret = secret.substring("Basic ".length());
+        }
+        if (!secret.trim().equals(requiredSecret.trim())) {
+            logError(response, 401, "Invalid API key.");
             return true;
         }
         return false;
+    }
+
+    private void logError(SlingHttpServletResponse response, int statuscode, String message)
+            throws IOException {
+        response.setStatus(404);
+        response.getWriter().write(message);
+        LOG.info("GPTJCRActionsServlet returning error status {} {}", statuscode, message);
     }
 
 }
