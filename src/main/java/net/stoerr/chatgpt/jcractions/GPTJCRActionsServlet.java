@@ -172,6 +172,10 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
 
     private void serveJSONRepresentation(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         RequestPathInfo requestPathInfo = request.getRequestPathInfo();
+        if (!pathIsAllowed(requestPathInfo.getSuffix())) {
+            logError(response, 403, "Access to " + request.getRequestPathInfo().getResourcePath() + " not allowed in configuration.");
+            return;
+        }
         Resource resource = requestPathInfo.getSuffixResource();
         if (resource == null) {
             logError(response, 404, "No resource found for " + request.getRequestPathInfo().getResourcePath());
@@ -188,29 +192,16 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
         response.getWriter().write(gson.toJson(json));
     }
 
-    private void serveBinaryData(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
-        Resource resource = request.getRequestPathInfo().getSuffixResource();
-        if (resource == null) {
-            logError(response, 404, "No resource found for " + request.getRequestPathInfo().getResourcePath());
-            return;
+    private boolean pathIsAllowed(String path) {
+        if (config.readAllowedPathRegex() == null || config.readAllowedPathRegex().length == 0) {
+            return false;
         }
-        try (InputStream dataStream = resource.adaptTo(InputStream.class)) {
-            if (dataStream != null) {
-                String mimeType = resource.getResourceMetadata().getContentType();
-                if (mimeType == null) {
-                    logError(response, 406, "No mimetype available for " + resource.getPath());
-                    return;
-                }
-                response.setContentType(mimeType);
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = dataStream.read(buffer)) != -1) {
-                    response.getOutputStream().write(buffer, 0, bytesRead);
-                }
-            } else {
-                logError(response, 404, "No binary data available for " + request.getRequestPathInfo().getResourcePath());
+        for (String pathRegex : config.readAllowedPathRegex()) {
+            if (path.matches(pathRegex)) {
+                return true;
             }
         }
+        return false;
     }
 
     private JsonObject toJsonObject(Resource resource, int depth) {
@@ -275,6 +266,36 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
         response.setStatus(404);
         response.getWriter().write(message);
         LOG.info("GPTJCRActionsServlet returning error status {} {}", statuscode, message);
+    }
+
+    private void serveBinaryData(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
+        RequestPathInfo requestPathInfo = request.getRequestPathInfo();
+        if (!pathIsAllowed(requestPathInfo.getSuffix())) {
+            logError(response, 403, "Access to " + request.getRequestPathInfo().getResourcePath() + " not allowed in configuration.");
+            return;
+        }
+        Resource resource = requestPathInfo.getSuffixResource();
+        if (resource == null) {
+            logError(response, 404, "No resource found for " + requestPathInfo.getResourcePath());
+            return;
+        }
+        try (InputStream dataStream = resource.adaptTo(InputStream.class)) {
+            if (dataStream != null) {
+                String mimeType = resource.getResourceMetadata().getContentType();
+                if (mimeType == null) {
+                    logError(response, 406, "No mimetype available for " + resource.getPath());
+                    return;
+                }
+                response.setContentType(mimeType);
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = dataStream.read(buffer)) != -1) {
+                    response.getOutputStream().write(buffer, 0, bytesRead);
+                }
+            } else {
+                logError(response, 404, "No binary data available for " + requestPathInfo.getResourcePath());
+            }
+        }
     }
 
 }
