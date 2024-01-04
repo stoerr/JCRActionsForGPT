@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.stream.Stream;
 
 import javax.servlet.Servlet;
+import javax.servlet.http.Cookie;
 
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
@@ -37,8 +38,10 @@ import com.google.gson.JsonObject;
 @Designate(ocd = GPTJCRActionsConfig.class)
 public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
 
+    /** For local testing in the browser an alternative to authorization. */
+    public static final String COOKIE_AUTHORIZATION = "JcrActionsAuthorization";
     /**
-     * Those are metadata and not relevant for the sresource content.
+     * Those are metadata and not relevant for the resource content.
      */
     private static final Collection<String> ignoredMetadataAttributes = new HashSet<>(Arrays.asList("jcr:uuid", "jcr:lastModified",
             "jcr:lastModifiedBy", "jcr:created", "jcr:createdBy", "jcr:isCheckedOut", "jcr:baseVersion",
@@ -68,6 +71,8 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
 
     @Override
     protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
+        if (checkAuthorizationFailure(request, response)) return;
+
         String extension = request.getRequestPathInfo().getExtension();
 
         switch (extension) {
@@ -103,7 +108,7 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 "paths:\n" +
                 "  /jcractions.{depth}.json/{path}:\n" +
                 "    get:\n" +
-                "      summary: Returns JSON representation of the JCR node\n" +
+                "      summary: Returns JSON representation of the JCR node up to given children depth\n" +
                 "      parameters:\n" +
                 "        - in: path\n" +
                 "          name: path\n" +
@@ -205,6 +210,34 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 response.getWriter().write("No binary data available for " + request.getRequestPathInfo().getResourcePath());
             }
         }
+    }
+
+    private boolean checkAuthorizationFailure(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
+        String requiredSecret = config.apiKey();
+        if (requiredSecret == null || requiredSecret.trim().isEmpty()) {
+            response.setStatus(500);
+            response.getWriter().write("No API key configured.");
+            return true;
+        }
+        String secret = request.getHeader("X-API-Key");
+        if (secret == null) {
+            secret = request.getHeader("Authorization");
+        }
+        if (secret == null) {
+            secret = request.getParameter("Authorization");
+        }
+        if (secret == null) {
+            Cookie cookie = request.getCookie(COOKIE_AUTHORIZATION);
+            if (cookie != null) {
+                secret = cookie.getValue();
+            }
+        }
+        if (secret == null || !secret.trim().equals(requiredSecret.trim())) {
+            response.setStatus(401);
+            response.getWriter().write("Invalid API key.");
+            return true;
+        }
+        return false;
     }
 
 }
