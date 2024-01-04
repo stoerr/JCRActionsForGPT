@@ -32,7 +32,7 @@ import com.google.gson.JsonObject;
 @Designate(ocd = GPTJCRActionsConfig.class)
 public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
 
-    private volatile GPTJCRActionsConfig config;
+    private volatile transient GPTJCRActionsConfig config;
 
     @Activate
     @Modified
@@ -51,7 +51,7 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
 
         switch (extension) {
             case "yaml":
-                serveOpenAPISpecification(request, response);
+                serveOpenAPISpecification(response);
                 break;
             case "json":
                 serveJSONRepresentation(request, response);
@@ -69,7 +69,7 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
     /**
      * Returns a full OpenAPI spec of this servlet; we omit /jcractions.yaml since that is not an operation for the GPT.
      */
-    private void serveOpenAPISpecification(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
+    private void serveOpenAPISpecification(SlingHttpServletResponse response) throws IOException {
         response.setContentType("application/yaml");
         response.getWriter().write("" +
                 "openapi: 3.0.0\n" +
@@ -108,27 +108,37 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
 
     private void serveJSONRepresentation(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         response.setContentType("application/json");
-        Resource resource = request.getResourceResolver().resolve(request, request.getRequestPathInfo().getResourcePath());
+        Resource resource = request.getRequestPathInfo().getSuffixResource();
         JsonObject json = new JsonObject();
-        for (Resource child : resource.getChildren()) {
-            resource.getValueMap().forEach((key, value) -> json.addProperty(key, String.valueOf(value)));
-        }
+        resource.getValueMap().forEach((key, value) -> json.addProperty(key, String.valueOf(value)));
         response.getWriter().write(new Gson().toJson(json));
     }
 
     private void serveBinaryData(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
-        response.setContentType("binary/data-type"); // set appropriate mime type
-        Resource resource = request.getResourceResolver().resolve(request, request.getRequestPathInfo().getResourcePath());
-        if (resource.adaptTo(InputStream.class) != null) {
-            InputStream dataStream = resource.adaptTo(InputStream.class);
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = dataStream.read(buffer)) != -1) {
-                response.getOutputStream().write(buffer, 0, bytesRead);
+        Resource resource = request.getRequestPathInfo().getSuffixResource();
+        if (resource == null) {
+            response.setStatus(404);
+            response.getWriter().write("No resource found for " + request.getRequestPathInfo().getResourcePath());
+            return;
+        }
+        try (InputStream dataStream = resource.adaptTo(InputStream.class)) {
+            if (dataStream != null) {
+                String mimeType = resource.getResourceMetadata().getContentType();
+                if (mimeType == null) {
+                    response.setStatus(406);
+                    response.getWriter().write("No mimetype available for " + resource.getPath());
+                    return;
+                }
+                response.setContentType(mimeType);
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = dataStream.read(buffer)) != -1) {
+                    response.getOutputStream().write(buffer, 0, bytesRead);
+                }
+            } else {
+                response.setStatus(404);
+                response.getWriter().write("No binary data available for " + request.getRequestPathInfo().getResourcePath());
             }
-            dataStream.close();
-        } else {
-            response.getWriter().write("No binary data available for " + request.getRequestPathInfo().getResourcePath());
         }
     }
 
