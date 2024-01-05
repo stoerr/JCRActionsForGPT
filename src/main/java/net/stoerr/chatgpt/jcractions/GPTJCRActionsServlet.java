@@ -6,9 +6,12 @@ import static net.stoerr.chatgpt.jcractions.JCRActionsUtil.pathIsAllowed;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Stream;
 
 import javax.servlet.Servlet;
@@ -107,6 +110,9 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
             case "data":
                 serveBinaryData(request, response);
                 break;
+            case "query":
+                serveQuery(request, response);
+                break;
             default:
                 logError(response, 404, "Invalid request extension " + extension + ".");
                 break;
@@ -150,6 +156,10 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 "      responses:\n" +
                 "        '200':\n" +
                 "          description: JSON content of the JCR node\n" +
+                "          content:\n" +
+                "            application/json:\n" +
+                "              schema:\n" +
+                "                type: object\n" +
                 "  /bin/public/gpt/jcractions.data/{path}:\n" +
                 "    get:\n" +
                 "      operationId: readData\n" +
@@ -163,8 +173,61 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 "            type: string\n" +
                 "      responses:\n" +
                 "        '200':\n" +
-                "          description: Binary data of the JCR node\n";
+                "          description: Text or binary data of the JCR node\n" +
+                "  /bin/public/gpt/jcractions.query/{query}:\n" +
+                "    get:\n" +
+                "      operationId: query\n" +
+                "      x-openai-isConsequential: false\n" +
+                "      summary: Returns the paths of all JCR nodes matching the given query\n" +
+                "      parameters:\n" +
+                "        - in: path\n" +
+                "          name: query\n" +
+                "          required: true\n" +
+                "          schema:\n" +
+                "            type: string\n" +
+                "      responses:\n" +
+                "        '200':\n" +
+                "          description: Paths of all JCR nodes matching the given query\n" +
+                "          content:\n" +
+                "            application/json:\n" +
+                "              schema:\n" +
+                "                type: array\n" +
+                "                items:\n" +
+                "                  type: string\n";
         response.getWriter().write(spec.replace("THEURL", url));
+    }
+
+    /**
+     * The suffix is a JCR Xpath2 Query and we return a JSON array of the results.
+     */
+    private void serveQuery(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
+        RequestPathInfo requestPathInfo = request.getRequestPathInfo();
+        String query = requestPathInfo.getSuffix();
+        if (query != null && query.startsWith("/jcr:root/")) {
+            query = query.substring("/jcr:root".length());
+        }
+        if (!pathIsAllowed(config.readAllowedPathRegex(), query)) {
+            logError(response, 403, "Access to " + request.getRequestPathInfo().getSuffix() + " not allowed in configuration.");
+            return;
+        }
+        if (query == null || query.isEmpty()) {
+            logError(response, 400, "No query given.");
+            return;
+        }
+        if (query.startsWith("/") && !query.startsWith("/jcr:root/")) {
+            query = "/jcr:root" + query;
+        }
+        response.setContentType("application/json");
+        Iterator<Resource> resultResources = request.getResourceResolver().findResources(query, "xpath");
+        List<String> result = new ArrayList<>();
+        while (resultResources.hasNext()) {
+            result.add(resultResources.next().getPath());
+        }
+        try {
+            response.getWriter().write(gson.toJson(result));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void serveJSONRepresentation(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {

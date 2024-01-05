@@ -26,6 +26,10 @@ paths:
       responses:
         '200':
           description: JSON content of the JCR node
+          content:
+            application/json:
+              schema:
+                type: object
   /bin/public/gpt/jcractions.data/{path}:
     get:
       operationId: readData
@@ -39,4 +43,24 @@ paths:
             type: string
       responses:
         '200':
-          description: Binary data of the JCR node
+          description: Text or binary data of the JCR node
+  /bin/public/gpt/jcractions.query/{query}:
+    get:
+      operationId: query
+      x-openai-isConsequential: false
+      summary: Returns the paths of all JCR nodes matching the given query
+      parameters:
+        - in: path
+          name: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paths of all JCR nodes matching the given query
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
