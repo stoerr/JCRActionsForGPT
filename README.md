@@ -2,17 +2,14 @@
 <a name="readme-top"></a>
 
 <!-- PROJECT SHIELDS -->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
+[![Stargazers][stars-shield]][stars-url]
 [![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
 
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/stoerr/jcr-actions-for-GPTs">
+  <a href="https://github.com/stoerr/JCRActionsForGPT">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
@@ -22,14 +19,14 @@
     This provides the action (incl. an OpenAPI declaration) useable for GPTs to read the JCR content repository
     in Apache Sling / AEM on configured paths.
     <br />
-    <a href="https://github.com/stoerr/jcr-actions-for-GPTs"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/stoerr/JCRActionsForGPT"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/stoerr/jcr-actions-for-GPTs">View Demo</a>
+    <a href="https://github.com/stoerr/JCRActionsForGPT">View Demo</a>
     ·
-    <a href="https://github.com/stoerr/jcr-actions-for-GPTs/issues">Report Bug</a>
+    <a href="https://github.com/stoerr/JCRActionsForGPT/issues">Report Bug</a>
     ·
-    <a href="https://github.com/stoerr/jcr-actions-for-GPTs/issues">Request Feature</a>
+    <a href="https://github.com/stoerr/JCRActionsForGPT/issues">Request Feature</a>
   </p>
 </div>
 
@@ -157,7 +154,7 @@ reverse proxy or something like that so that only that URL /bin/public/gpt/jcrac
     - [ ] Nested Feature
 -->
 
-See the [open issues](https://github.com/stoerr/jcr-actions-for-GPTs/issues) for a full list of proposed features (and
+See the [open issues](https://github.com/stoerr/JCRActionsForGPT/issues) for a full list of proposed features (and
 known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -200,7 +197,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 Hans-Peter Störr - [www.stoerr.net](https://www.stoerr.net) , [@HansPeterStoerr](https://twitter.com/HansPeterStoerr)
 
-Project Link: [https://github.com/stoerr/jcr-actions-for-GPTs](https://github.com/stoerr/jcr-actions-for-GPTs)
+Project Link: [https://github.com/stoerr/JCRActionsForGPT](https://github.com/stoerr/JCRActionsForGPT)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -221,25 +218,25 @@ Project Link: [https://github.com/stoerr/jcr-actions-for-GPTs](https://github.co
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[contributors-shield]: https://img.shields.io/github/contributors/stoerr/jcr-actions-for-GPTs.svg?style=for-the-badge
+[contributors-shield]: https://img.shields.io/github/contributors/stoerr/JCRActionsForGPT.svg?style=for-the-badge
 
-[contributors-url]: https://github.com/stoerr/jcr-actions-for-GPTs/graphs/contributors
+[contributors-url]: https://github.com/stoerr/JCRActionsForGPT/graphs/contributors
 
-[forks-shield]: https://img.shields.io/github/forks/stoerr/jcr-actions-for-GPTs.svg?style=for-the-badge
+[forks-shield]: https://img.shields.io/github/forks/stoerr/JCRActionsForGPT.svg?style=for-the-badge
 
-[forks-url]: https://github.com/stoerr/jcr-actions-for-GPTs/network/members
+[forks-url]: https://github.com/stoerr/JCRActionsForGPT/network/members
 
-[stars-shield]: https://img.shields.io/github/stars/stoerr/jcr-actions-for-GPTs.svg?style=for-the-badge
+[stars-shield]: https://img.shields.io/github/stars/stoerr/JCRActionsForGPT.svg?style=for-the-badge
 
-[stars-url]: https://github.com/stoerr/jcr-actions-for-GPTs/stargazers
+[stars-url]: https://github.com/stoerr/JCRActionsForGPT/stargazers
 
-[issues-shield]: https://img.shields.io/github/issues/stoerr/jcr-actions-for-GPTs.svg?style=for-the-badge
+[issues-shield]: https://img.shields.io/github/issues/stoerr/JCRActionsForGPT.svg?style=for-the-badge
 
-[issues-url]: https://github.com/stoerr/jcr-actions-for-GPTs/issues
+[issues-url]: https://github.com/stoerr/JCRActionsForGPT/issues
 
-[license-shield]: https://img.shields.io/github/license/stoerr/jcr-actions-for-GPTs.svg?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/stoerr/JCRActionsForGPT.svg?style=for-the-badge
 
-[license-url]: https://github.com/stoerr/jcr-actions-for-GPTs/blob/master/LICENSE.txt
+[license-url]: https://github.com/stoerr/JCRActionsForGPT/blob/master/LICENSE.txt
 
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 
