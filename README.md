@@ -73,7 +73,7 @@ This is an OSGI bundle deployable on [Apache Sling](https://sling.apache.org/) /
 [Adobe Experience Manager (AEM)](https://business.adobe.com/uk/products/experience-manager/adobe-experience-manager.html)
 that provides the actions for a
 GPT to read the JCR content repository on configured paths. You can use it to direct ChatGPT to read the properties of
-JCR nodes and to read the contents of stored files, and answer questions, do summary tasks etc.
+(anonymously readable) JCR nodes and to read the contents of stored files, and answer questions, do summary tasks etc.
 
 This is currently just done as minimal project so that it does what I need it to do. If it doesn't work for you
 please contact me - if there is somebody who is interested and willing to provide feedback and share his experiences,

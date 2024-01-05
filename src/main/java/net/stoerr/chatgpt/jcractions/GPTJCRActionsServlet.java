@@ -1,5 +1,9 @@
 package net.stoerr.chatgpt.jcractions;
 
+import static net.stoerr.chatgpt.jcractions.JCRActionsUtil.checkAuthorizationFailure;
+import static net.stoerr.chatgpt.jcractions.JCRActionsUtil.logError;
+import static net.stoerr.chatgpt.jcractions.JCRActionsUtil.pathIsAllowed;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -8,8 +12,6 @@ import java.util.HashSet;
 import java.util.stream.Stream;
 
 import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
 
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
@@ -67,7 +69,7 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
             "cq:lastRolledout", "cq:lastRolledoutBy", "cq:lastRolledoutAction", "cq:lastRolledoutStatus"
     ));
 
-    private volatile transient GPTJCRActionsConfig config;
+    private transient volatile GPTJCRActionsConfig config;
 
     private final transient Gson gson = new Gson();
 
@@ -96,7 +98,7 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
             serveOpenAPISpecification(request, response);
             return;
         }
-        if (checkAuthorizationFailure(request, response)) return;
+        if (checkAuthorizationFailure(request, response, config.apiKey())) return;
 
         switch (extension) {
             case "json":
@@ -109,11 +111,6 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
                 logError(response, 404, "Invalid request extension " + extension + ".");
                 break;
         }
-    }
-
-    @Override
-    protected void doOptions(SlingHttpServletRequest request, SlingHttpServletResponse response) throws ServletException, IOException {
-        super.doOptions(request, response);
     }
 
     /**
@@ -172,7 +169,7 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
 
     private void serveJSONRepresentation(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         RequestPathInfo requestPathInfo = request.getRequestPathInfo();
-        if (!pathIsAllowed(requestPathInfo.getSuffix())) {
+        if (!pathIsAllowed(config.readAllowedPathRegex(), requestPathInfo.getSuffix())) {
             logError(response, 403, "Access to " + request.getRequestPathInfo().getSuffix() + " not allowed in configuration.");
             return;
         }
@@ -190,18 +187,6 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
         response.setContentType("application/json");
         JsonObject json = toJsonObject(resource, depth);
         response.getWriter().write(gson.toJson(json));
-    }
-
-    private boolean pathIsAllowed(String path) {
-        if (config.readAllowedPathRegex() == null || config.readAllowedPathRegex().length == 0) {
-            return false;
-        }
-        for (String pathRegex : config.readAllowedPathRegex()) {
-            if (path.matches(pathRegex)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private JsonObject toJsonObject(Resource resource, int depth) {
@@ -231,46 +216,9 @@ public class GPTJCRActionsServlet extends SlingAllMethodsServlet {
         }
     }
 
-    private boolean checkAuthorizationFailure(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
-        String requiredSecret = config.apiKey();
-        if (requiredSecret == null || requiredSecret.trim().isEmpty()) {
-            logError(response, 500, "No API key configured.");
-            return true;
-        }
-        String secret = request.getHeader(HEADER_API_KEY);
-        if (secret == null) { // for easy testing in the browser
-            secret = request.getParameter(HEADER_API_KEY);
-        }
-        if (secret == null) {
-            Cookie cookie = request.getCookie(COOKIE_AUTHORIZATION);
-            if (cookie != null) {
-                secret = cookie.getValue();
-            }
-        }
-        if (secret == null) {
-            logError(response, 401, "No API key given in request.");
-            return true;
-        }
-        if (secret.startsWith("Basic ")) {
-            secret = secret.substring("Basic ".length());
-        }
-        if (!secret.trim().equals(requiredSecret.trim())) {
-            logError(response, 401, "Invalid API key.");
-            return true;
-        }
-        return false;
-    }
-
-    private void logError(SlingHttpServletResponse response, int statuscode, String message)
-            throws IOException {
-        response.setStatus(404);
-        response.getWriter().write(message);
-        LOG.info("GPTJCRActionsServlet returning error status {} {}", statuscode, message);
-    }
-
     private void serveBinaryData(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         RequestPathInfo requestPathInfo = request.getRequestPathInfo();
-        if (!pathIsAllowed(requestPathInfo.getSuffix())) {
+        if (!pathIsAllowed(config.readAllowedPathRegex(), requestPathInfo.getSuffix())) {
             logError(response, 403, "Access to " + request.getRequestPathInfo().getSuffix() + " not allowed in configuration.");
             return;
         }

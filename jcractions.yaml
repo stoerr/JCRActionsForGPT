@@ -1,0 +1,42 @@
+openapi: 3.0.0
+info:
+  title: GPT JCR Actions API
+  description: API to interact with JCR content repository via GPT.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /bin/public/gpt/jcractions.{depth}.json/{path}:
+    get:
+      operationId: readJson
+      x-openai-isConsequential: false
+      summary: Returns JSON representation of the JCR node up to given children depth
+      parameters:
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: depth
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: JSON content of the JCR node
+  /bin/public/gpt/jcractions.data/{path}:
+    get:
+      operationId: readData
+      x-openai-isConsequential: false
+      summary: Returns the binary data of the JCR node
+      parameters:
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Binary data of the JCR node
